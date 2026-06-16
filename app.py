@@ -39,13 +39,15 @@ PT = dict(paper_bgcolor="#0d1117", plot_bgcolor="#0d1117", font_color="#c9d1d9",
           yaxis=dict(gridcolor="#21262d",linecolor="#30363d"))
 
 COMPETITIONS = {
-    "Premier League 2024/25":          {"id":2021,"season":2024},
-    "La Liga 2024/25":                  {"id":2014,"season":2024},
-    "Bundesliga 2024/25":               {"id":2002,"season":2024},
-    "Serie A 2024/25":                  {"id":2019,"season":2024},
-    "Ligue 1 2024/25":                  {"id":2015,"season":2024},
-    "Champions League 2024/25":         {"id":2001,"season":2024},
-    "MLS 2025":                         {"id":2096,"season":2025},
+    "🏆 Mundial 2026":                  {"id": 2000, "season": 2026},
+    "Premier League 2025/26":           {"id": 2021, "season": 2025},
+    "La Liga 2025/26":                  {"id": 2014, "season": 2025},
+    "Bundesliga 2025/26":               {"id": 2002, "season": 2025},
+    "Serie A 2025/26":                  {"id": 2019, "season": 2025},
+    "Ligue 1 2025/26":                  {"id": 2015, "season": 2025},
+    "Champions League 2025/26":         {"id": 2001, "season": 2025},
+    "MLS 2026":                         {"id": 2096, "season": 2026},
+}
 }
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
