@@ -159,7 +159,18 @@ st.caption(f"Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Standings","🥅 Top scorers","📅 Recent results","📈 Team analysis"])
 
-with tab1:
+with tab1
+    with st.spinner("Loading standings…"):
+        df_st, err = load_standings(comp["id"], comp["season"], api_key)
+        
+    # --- 🛠️ MODO DEBUG: INSPECCIONAR LA API ---
+    with st.expander("🛠️ Ver datos crudos de la API (Para el Inge)"):
+        raw_data = api(f"competitions/{comp['id']}/standings", {"season":comp["season"]}, api_key)
+        st.json(raw_data)
+    # ------------------------------------------
+
+    if err:
+        st.error(f"API error: {err}")
     with st.spinner("Loading standings…"):
         df_st, err = load_standings(comp["id"], comp["season"], api_key)
     if err:
