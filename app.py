@@ -98,29 +98,37 @@ def load_standings(comp_id, season, key):
     data = api(f"competitions/{comp_id}/standings", {"season":season}, key)
     if "error" in data: return pd.DataFrame(), data["error"]
     
-    # --- EL DICCIONARIO MAESTRO DEL MUNDIAL ---
-    # Interceptamos a los 48 equipos y los metemos a su grupo a la fuerza.
-    # Nota: Acomodé los 48 que salieron en tu API. Si la FIFA movió a alguno, 
-    # solo cámbiale la letra aquí abajo y el código hace el resto.
+    # --- EL DICCIONARIO MAESTRO DEL MUNDIAL (OFICIAL) ---
     wc_groups = {
-        "Mexico": "Group A", "Argentina": "Group A", "Sweden": "Group A", "Curaçao": "Group A",
-        "Brazil": "Group B", "United States": "Group B", "Ivory Coast": "Group B", "Haiti": "Group B",
-        "France": "Group C", "Australia": "Group C", "Scotland": "Group C", "Uzbekistan": "Group C",
-        "Spain": "Group D", "South Korea": "Group D", "Canada": "Group D", "Jordan": "Group D",
-        "England": "Group E", "Japan": "Group E", "Bosnia-Herzegovina": "Group E", "Cape Verde Islands": "Group E",
-        "Portugal": "Group F", "Iran": "Group F", "Qatar": "Group F", "Panama": "Group F",
-        "Belgium": "Group G", "New Zealand": "Group G", "Switzerland": "Group G", "Congo DR": "Group G",
-        "Netherlands": "Group H", "Morocco": "Group H", "Egypt": "Group H", "South Africa": "Group H",
-        "Germany": "Group I", "Saudi Arabia": "Group I", "Senegal": "Group I", "Ecuador": "Group I",
-        "Uruguay": "Group J", "Algeria": "Group J", "Iraq": "Group J", "Paraguay": "Group J",
-        "Colombia": "Group K", "Austria": "Group K", "Norway": "Group K", "Tunisia": "Group K",
-        "Croatia": "Group L", "Czechia": "Group L", "Ghana": "Group L", "Turkey": "Group L"
+        # Grupo A
+        "Mexico": "Group A", "South Korea": "Group A", "Czechia": "Group A", "South Africa": "Group A",
+        # Grupo B
+        "Switzerland": "Group B", "Canada": "Group B", "Qatar": "Group B", "Bosnia-Herzegovina": "Group B",
+        # Grupo C
+        "Scotland": "Group C", "Morocco": "Group C", "Brazil": "Group C", "Haiti": "Group C",
+        # Grupo D
+        "United States": "Group D", "Australia": "Group D", "Turkey": "Group D", "Paraguay": "Group D",
+        # Grupo E
+        "Germany": "Group E", "Ivory Coast": "Group E", "Ecuador": "Group E", "Curaçao": "Group E",
+        # Grupo F
+        "Sweden": "Group F", "Japan": "Group F", "Netherlands": "Group F", "Tunisia": "Group F",
+        # Grupo G
+        "New Zealand": "Group G", "Iran": "Group G", "Belgium": "Group G", "Egypt": "Group G",
+        # Grupo H
+        "Uruguay": "Group H", "Saudi Arabia": "Group H", "Spain": "Group H", "Cape Verde Islands": "Group H",
+        # Grupo I
+        "France": "Group I", "Senegal": "Group I", "Iraq": "Group I", "Norway": "Group I",
+        # Grupo J
+        "Argentina": "Group J", "Algeria": "Group J", "Austria": "Group J", "Jordan": "Group J",
+        # Grupo K
+        "Portugal": "Group K", "Congo DR": "Group K", "Uzbekistan": "Group K", "Colombia": "Group K",
+        # Grupo L
+        "England": "Group L", "Croatia": "Group L", "Ghana": "Group L", "Panama": "Group L"
     }
     
     rows = []
     for group_data in data.get("standings", []):
         if group_data.get("type") in ["TOTAL", "HOME", "AWAY"]: 
-            # Filtramos solo la tabla total, a veces la API manda duplicados de local/visita
             if group_data.get("type") != "TOTAL": continue
                 
             raw_group = group_data.get("group")
@@ -129,7 +137,7 @@ def load_standings(comp_id, season, key):
             for t in group_data.get("table",[]):
                 team_name = t.get("team", {}).get("name", "Unknown")
                 
-                # INYECCIÓN DEL GRUPO: Si es el Mundial (id 2000), usamos nuestro diccionario
+                # Inyectamos el grupo correcto para el Mundial
                 if comp_id == 2000:
                     final_group = wc_groups.get(team_name, "Group ?")
                 else:
@@ -152,11 +160,9 @@ def load_standings(comp_id, season, key):
                 
     df = pd.DataFrame(rows)
     
-    # REORDENAMIENTO TÁCTICO: Solo para el mundial, reconstruimos la tabla
+    # Reordenamiento dinámico para reconstruir la tabla
     if comp_id == 2000 and not df.empty:
-        # Ordenamos alfabéticamente por grupo, y luego por mérito deportivo
         df = df.sort_values(by=["Group", "Pts", "GD", "GF"], ascending=[True, False, False, False])
-        # Reseteamos la posición para que cada equipo sea 1, 2, 3 o 4 en su sector
         df["Pos"] = df.groupby("Group").cumcount() + 1
         
     return df, None
