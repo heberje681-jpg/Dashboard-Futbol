@@ -98,10 +98,13 @@ def load_standings(comp_id, season, key):
     data = api(f"competitions/{comp_id}/standings", {"season":season}, key)
     if "error" in data: return pd.DataFrame(), data["error"]
     rows = []
-    for group in data.get("standings", []):
-        if group.get("type") == "TOTAL":
-            for t in group.get("table",[]):
+    for group_data in data.get("standings", []):
+        if group_data.get("type") == "TOTAL":
+            # Extraemos el nombre del grupo y lo formateamos limpio (ej: GROUP_A -> Group A)
+            group_name = group_data.get("group", "TOTAL").replace("_", " ").title()
+            for t in group_data.get("table",[]):
                 rows.append({
+                    "Group": group_name,
                     "Pos":  t["position"],
                     "Team": t["team"]["name"],
                     "P":    t["playedGames"],
@@ -162,14 +165,48 @@ with tab1:
     elif df_st.empty:
         st.warning("No standings data available yet.")
     else:
-        c1,c2,c3,c4 = st.columns(4)
-        leader = df_st.iloc[0]
-        for col,label,val in [(c1,"Leader",leader["Team"]),(c2,"Points",str(leader["Pts"])),
-                               (c3,"Goals For",str(leader["GF"])),(c4,"Goal Diff",f"+{leader['GD']}" if leader['GD']>0 else str(leader['GD']))]:
-            with col:
-                st.markdown(f'<div class="kpi"><div class="kpi-val">{val}</div><div class="kpi-lbl">{label}</div></div>', unsafe_allow_html=True)
+        # Formateador de racha con colores
+        def color_form(form):
+            if not form: return ""
+            icons = {"W":"🟢","D":"🟡","L":"🔴"}
+            return " ".join(icons.get(c,"⚪") for c in form.split(",") if c)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        df_st["Form_display"] = df_st["Form"].apply(color_form)
+
+        # --- ARQUITECTURA DINÁMICA: ¿Es Copa/Mundial o Liga Normal? ---
+        if "Group" in df_st.columns and df_st["Group"].nunique() > 1:
+            st.markdown('<div class="sec">Fase de Grupos</div>', unsafe_allow_html=True)
+            
+            # Selector dinámico para alternar limpiamente entre los grupos del Mundial
+            group_selected = st.selectbox("Selecciona un sector", df_st["Group"].unique())
+            sub_df = df_st[df_st["Group"] == group_selected]
+            
+            st.dataframe(sub_df[["Pos","Team","P","W","D","L","GF","GA","GD","Pts","Form_display"]].rename(columns={"Form_display":"Form"}),
+                         use_container_width=True, hide_index=True,
+                         column_config={"Pos":st.column_config.NumberColumn(width="small"),
+                                        "Pts":st.column_config.NumberColumn(width="small")})
+        else:
+            # Formato clásico para ligas regulares
+            c1,c2,c3,c4 = st.columns(4)
+            leader = df_st.iloc[0]
+            for col,label,val in [(c1,"Leader",leader["Team"]),(c2,"Points",str(leader["Pts"])),
+                                   (c3,"Goals For",str(leader["GF"])),(c4,"Goal Diff",f"+{leader['GD']}" if leader['GD']>0 else str(leader['GD']))]:
+                with col:
+                    st.markdown(f'<div class="kpi"><div class="kpi-val">{val}</div><div class="kpi-lbl">{label}</div></div>', unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.dataframe(df_st[["Pos","Team","P","W","D","L","GF","GA","GD","Pts","Form_display"]].rename(columns={"Form_display":"Form"}),
+                         use_container_width=True, hide_index=True,
+                         column_config={"Pos":st.column_config.NumberColumn(width="small"),
+                                        "Pts":st.column_config.NumberColumn(width="small")})
+
+        st.markdown('<div class="sec" style="margin-top:1rem;">Points distribution (Top 10)</div>', unsafe_allow_html=True)
+        top10 = df_st.head(10)
+        fig = px.bar(top10, x="Team", y="Pts", color="Pts",
+                     color_continuous_scale=["#1f3a5f","#58a6ff","#cae8ff"])
+        fig.update_layout(**PT, height=320, coloraxis_showscale=False, margin=dict(l=0,r=0,t=10,b=0))
+        fig.update_xaxes(tickangle=-30)
+        st.plotly_chart(fig, use_container_width=True)
 
         # Form color coding
         def color_form(form):
