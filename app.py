@@ -203,10 +203,6 @@ with tab1:
     with st.spinner("Loading standings…"):
         df_st, err = load_standings(comp["id"], comp["season"], api_key)
         
-    # --- 🛠️ MODO DEBUG: INSPECCIONAR LA API ---
-    with st.expander("🛠️ Ver datos crudos de la API (Para el Inge)"):
-        raw_data = api(f"competitions/{comp['id']}/standings", {"season":comp["season"]}, api_key)
-        st.json(raw_data)
     # ------------------------------------------
 
     if err:
