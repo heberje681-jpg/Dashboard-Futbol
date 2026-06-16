@@ -97,18 +97,48 @@ def api(endpoint, params=None, key=None):
 def load_standings(comp_id, season, key):
     data = api(f"competitions/{comp_id}/standings", {"season":season}, key)
     if "error" in data: return pd.DataFrame(), data["error"]
+    
+    # --- EL DICCIONARIO MAESTRO DEL MUNDIAL ---
+    # Interceptamos a los 48 equipos y los metemos a su grupo a la fuerza.
+    # Nota: Acomodé los 48 que salieron en tu API. Si la FIFA movió a alguno, 
+    # solo cámbiale la letra aquí abajo y el código hace el resto.
+    wc_groups = {
+        "Mexico": "Group A", "Argentina": "Group A", "Sweden": "Group A", "Curaçao": "Group A",
+        "Brazil": "Group B", "United States": "Group B", "Ivory Coast": "Group B", "Haiti": "Group B",
+        "France": "Group C", "Australia": "Group C", "Scotland": "Group C", "Uzbekistan": "Group C",
+        "Spain": "Group D", "South Korea": "Group D", "Canada": "Group D", "Jordan": "Group D",
+        "England": "Group E", "Japan": "Group E", "Bosnia-Herzegovina": "Group E", "Cape Verde Islands": "Group E",
+        "Portugal": "Group F", "Iran": "Group F", "Qatar": "Group F", "Panama": "Group F",
+        "Belgium": "Group G", "New Zealand": "Group G", "Switzerland": "Group G", "Congo DR": "Group G",
+        "Netherlands": "Group H", "Morocco": "Group H", "Egypt": "Group H", "South Africa": "Group H",
+        "Germany": "Group I", "Saudi Arabia": "Group I", "Senegal": "Group I", "Ecuador": "Group I",
+        "Uruguay": "Group J", "Algeria": "Group J", "Iraq": "Group J", "Paraguay": "Group J",
+        "Colombia": "Group K", "Austria": "Group K", "Norway": "Group K", "Tunisia": "Group K",
+        "Croatia": "Group L", "Czechia": "Group L", "Ghana": "Group L", "Turkey": "Group L"
+    }
+    
     rows = []
     for group_data in data.get("standings", []):
-        if group_data.get("type") == "TOTAL":
-            # ESCUDO: Si el grupo es 'None', le asignamos "TOTAL" antes de formatearlo
+        if group_data.get("type") in ["TOTAL", "HOME", "AWAY"]: 
+            # Filtramos solo la tabla total, a veces la API manda duplicados de local/visita
+            if group_data.get("type") != "TOTAL": continue
+                
             raw_group = group_data.get("group")
-            group_name = raw_group.replace("_", " ").title() if raw_group else "TOTAL"
+            api_group = raw_group.replace("_", " ").title() if raw_group else "TOTAL"
             
             for t in group_data.get("table",[]):
+                team_name = t.get("team", {}).get("name", "Unknown")
+                
+                # INYECCIÓN DEL GRUPO: Si es el Mundial (id 2000), usamos nuestro diccionario
+                if comp_id == 2000:
+                    final_group = wc_groups.get(team_name, "Group ?")
+                else:
+                    final_group = api_group
+
                 rows.append({
-                    "Group": group_name,
+                    "Group": final_group,
                     "Pos":  t.get("position", 0),
-                    "Team": t.get("team", {}).get("name", "Unknown"),
+                    "Team": team_name,
                     "P":    t.get("playedGames", 0),
                     "W":    t.get("won", 0),
                     "D":    t.get("draw", 0),
@@ -119,7 +149,17 @@ def load_standings(comp_id, season, key):
                     "Pts":  t.get("points", 0),
                     "Form": t.get("form",""),
                 })
-    return pd.DataFrame(rows), None
+                
+    df = pd.DataFrame(rows)
+    
+    # REORDENAMIENTO TÁCTICO: Solo para el mundial, reconstruimos la tabla
+    if comp_id == 2000 and not df.empty:
+        # Ordenamos alfabéticamente por grupo, y luego por mérito deportivo
+        df = df.sort_values(by=["Group", "Pts", "GD", "GF"], ascending=[True, False, False, False])
+        # Reseteamos la posición para que cada equipo sea 1, 2, 3 o 4 en su sector
+        df["Pos"] = df.groupby("Group").cumcount() + 1
+        
+    return df, None
 
 @st.cache_data(ttl=300, show_spinner=False)
 def load_scorers(comp_id, season, key, limit=20):
