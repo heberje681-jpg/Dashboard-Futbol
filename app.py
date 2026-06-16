@@ -100,20 +100,23 @@ def load_standings(comp_id, season, key):
     rows = []
     for group_data in data.get("standings", []):
         if group_data.get("type") == "TOTAL":
-            group_name = group_data.get("group", "TOTAL").replace("_", " ").title()
+            # ESCUDO: Si el grupo es 'None', le asignamos "TOTAL" antes de formatearlo
+            raw_group = group_data.get("group")
+            group_name = raw_group.replace("_", " ").title() if raw_group else "TOTAL"
+            
             for t in group_data.get("table",[]):
                 rows.append({
                     "Group": group_name,
-                    "Pos":  t["position"],
-                    "Team": t["team"]["name"],
-                    "P":    t["playedGames"],
-                    "W":    t["won"],
-                    "D":    t["draw"],
-                    "L":    t["lost"],
-                    "GF":   t["goalsFor"],
-                    "GA":   t["goalsAgainst"],
-                    "GD":   t["goalDifference"],
-                    "Pts":  t["points"],
+                    "Pos":  t.get("position", 0),
+                    "Team": t.get("team", {}).get("name", "Unknown"),
+                    "P":    t.get("playedGames", 0),
+                    "W":    t.get("won", 0),
+                    "D":    t.get("draw", 0),
+                    "L":    t.get("lost", 0),
+                    "GF":   t.get("goalsFor", 0),
+                    "GA":   t.get("goalsAgainst", 0),
+                    "GD":   t.get("goalDifference", 0),
+                    "Pts":  t.get("points", 0),
                     "Form": t.get("form",""),
                 })
     return pd.DataFrame(rows), None
