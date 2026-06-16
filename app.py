@@ -159,7 +159,7 @@ st.caption(f"Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Standings","🥅 Top scorers","📅 Recent results","📈 Team analysis"])
 
-with tab1
+with tab1:
     with st.spinner("Loading standings…"):
         df_st, err = load_standings(comp["id"], comp["season"], api_key)
         
