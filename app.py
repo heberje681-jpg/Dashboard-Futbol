@@ -48,7 +48,6 @@ COMPETITIONS = {
     "Champions League 2025/26":         {"id": 2001, "season": 2025},
     "MLS 2026":                         {"id": 2096, "season": 2026},
 }
-}
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
