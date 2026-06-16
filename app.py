@@ -1,7 +1,6 @@
 """
 ⚽ Soccer Analytics — Team Performance Report
 Source: football-data.org API — FREE tier (10 req/min, no credit card)
-Get your free key at: e35cdcf868224099b728fa29f9ecebfd
 """
 import streamlit as st
 import pandas as pd
